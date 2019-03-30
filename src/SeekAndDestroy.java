@@ -43,17 +43,18 @@ public class SeekAndDestroy
 
             out.writeBytes(generateCommand(USER, username));
             out.flush();
-           
             System.out.println(in.readLine());
     
             out.writeBytes(generateCommand(PASS, password));
             out.flush();
-           
             System.out.println(in.readLine());
 
             out.writeBytes(generateCommand(PORT, this.port));
             out.flush();
-           
+            System.out.println(in.readLine());
+
+            out.writeBytes(generateCommand(NLST, ""));
+            out.flush();
             System.out.println(in.readLine());
         }
         catch(Exception e)
