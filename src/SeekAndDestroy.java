@@ -54,7 +54,7 @@ public class SeekAndDestroy
             out.writeBytes(generateCommand(PORT, this.port));
             out.flush();
            
-            System.out.println(in.readLine());
+        System.out.println(in.readLine());
 
             // takes input from terminal
            
@@ -67,7 +67,7 @@ public class SeekAndDestroy
 
     private String generateCommand(String name, String arg)
     {
-        return name + " " + arg + "\r\n\r\n";
+        return name + " " + arg + "\r\n";
     }
 
     public static void main(String args[])
