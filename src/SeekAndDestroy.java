@@ -38,14 +38,26 @@ public class SeekAndDestroy
             System.out.println("Connected");
 
             // sends output to the socket
+             in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             out = new DataOutputStream(socket.getOutputStream());
 
             out.writeBytes(generateCommand(USER, username));
+            out.flush();
+           
+            System.out.println(in.readLine());
+    
             out.writeBytes(generateCommand(PASS, password));
+            out.flush();
+           
+            System.out.println(in.readLine());
+
             out.writeBytes(generateCommand(PORT, this.port));
+            out.flush();
+           
+            System.out.println(in.readLine());
 
             // takes input from terminal
-            in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+           
         }
         catch(Exception e)
         {
@@ -55,7 +67,7 @@ public class SeekAndDestroy
 
     private String generateCommand(String name, String arg)
     {
-        return name + " " + arg + "\\r\\n";
+        return name + " " + arg + "\r\n\r\n";
     }
 
     public static void main(String args[])
