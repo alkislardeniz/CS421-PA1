@@ -22,7 +22,7 @@ public class SeekAndDestroy
     // create socket, input and output stream
     private Socket socket = null;
     private BufferedReader in = null;
-    private BufferedWriter out = null;
+    private DataOutputStream out = null;
 
     // constructor to put ip address and port
     public SeekAndDestroy(String address, int port)
@@ -38,10 +38,11 @@ public class SeekAndDestroy
             System.out.println("Connected");
 
             // sends output to the socket
-            out = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
-            out.write(generateCommand(USER, username));
-            out.write(generateCommand(PASS, password));
-            out.write(generateCommand(PORT, this.port));
+            out = new DataOutputStream(socket.getOutputStream());
+
+            out.writeBytes(generateCommand(USER, username));
+            out.writeBytes(generateCommand(PASS, password));
+            out.writeBytes(generateCommand(PORT, this.port));
 
             // takes input from terminal
             in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
