@@ -11,12 +11,12 @@ List<String> strings;
          try
         {
             
-            System.out.println("zaart");
-           
-            ServerSocket serverSocket = new ServerSocket(1634,0, InetAddress.getByName("127.0.0.1"));
-            
+             ServerSocket serverSocket=null;
+           synchronized(this){
+             serverSocket = new ServerSocket(5252,0, InetAddress.getByName("127.0.0.1"));
+            notify();
+            }
             Socket clientSocket = serverSocket.accept();
-            System.out.println("zaart2");
             BufferedReader in = new BufferedReader(
         new InputStreamReader(clientSocket.getInputStream()));
            boolean flag = true;
@@ -27,8 +27,8 @@ List<String> strings;
             
             if((line = in.readLine())!=null){
                 flag = false;
-                 System.out.println("zaa"+line);
-                this.strings.add(line+"\r\n");
+             
+                this.strings.add(line);
             }else if(!flag){
                 break;
             }
@@ -41,7 +41,7 @@ List<String> strings;
 
         catch(Exception e)
         {
-            System.err.println("asass");
+            System.out.println("asass");
         }
        
   }
@@ -79,6 +79,7 @@ public class SeekAndDestroy
         // establish a connection
         try
         {
+           
             socket = new Socket(address, port);
             System.out.println("Connected");
 
@@ -95,26 +96,34 @@ public class SeekAndDestroy
             out.flush();
            
             System.out.println(in.readLine());
-            List<String> sharedStrings = new ArrayList<String>();
+             List<String> sharedStrings = new ArrayList<String>();
              MyThread thread = new MyThread(sharedStrings);
              thread.start();
           
+            synchronized(thread){
+            try{
+                System.out.println("Waiting for b to complete...");
+                thread.wait();
+            }catch(InterruptedException e){
+                e.printStackTrace();
+            }
+        }
            
             
            
 
-            out.writeBytes(generateCommand(PORT,""+ 1634));
+            out.writeBytes(generateCommand(PORT,""+ 5252));
             out.flush();
            
             System.out.println(in.readLine());
             out.writeBytes(generateCommand(NLST,""  ));
             out.flush();
-            System.out.println("zaa1");
+            
             System.out.println(in.readLine());
-            System.out.println("zaa");
+            
        
             thread.join();
-            System.out.println("xdd"+sharedStrings.toString());
+            System.out.println("xdd: "+sharedStrings.toString());
 
 
             // takes input from terminal
