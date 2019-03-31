@@ -1,8 +1,53 @@
 // A Java program for a Client
 import java.net.*;
+import java.util.*;
 import java.io.*;
+       class MyThread extends Thread {
+List<String> strings;
+ MyThread(List<String> strings) {
+        this.strings = strings;
+    }
+    public void run() {
+         try
+        {
+            
+            System.out.println("zaart");
+           
+            ServerSocket serverSocket = new ServerSocket(1634,0, InetAddress.getByName("127.0.0.1"));
+            
+            Socket clientSocket = serverSocket.accept();
+            System.out.println("zaart2");
+            BufferedReader in = new BufferedReader(
+        new InputStreamReader(clientSocket.getInputStream()));
+           boolean flag = true;
+           String line;
+          while(true){
+           
+            
+            
+            if((line = in.readLine())!=null){
+                flag = false;
+                 System.out.println("zaa"+line);
+                this.strings.add(line+"\r\n");
+            }else if(!flag){
+                break;
+            }
 
-public class SeekAndDestroy
+        
+       
+    }
+
+         }
+
+        catch(Exception e)
+        {
+            System.err.println("asass");
+        }
+       
+  }
+}
+
+public class SeekAndDestroy 
 {
     // initialize commands
     private final String USER = "USER";
@@ -38,24 +83,42 @@ public class SeekAndDestroy
             System.out.println("Connected");
 
             // sends output to the socket
-            in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+             in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             out = new DataOutputStream(socket.getOutputStream());
 
             out.writeBytes(generateCommand(USER, username));
             out.flush();
+           
             System.out.println(in.readLine());
     
             out.writeBytes(generateCommand(PASS, password));
             out.flush();
+           
             System.out.println(in.readLine());
+            List<String> sharedStrings = new ArrayList<String>();
+             MyThread thread = new MyThread(sharedStrings);
+             thread.start();
+          
+           
+            
+           
 
-            out.writeBytes(generateCommand(PORT, this.port));
+            out.writeBytes(generateCommand(PORT,""+ 1634));
             out.flush();
+           
             System.out.println(in.readLine());
+            out.writeBytes(generateCommand(NLST,""  ));
+            out.flush();
+            System.out.println("zaa1");
+            System.out.println(in.readLine());
+            System.out.println("zaa");
+       
+            thread.join();
+            System.out.println("xdd"+sharedStrings.toString());
 
-            out.writeBytes(generateCommand(NLST, ""));
-            out.flush();
-            System.out.println(in.readLine());
+
+            // takes input from terminal
+           
         }
         catch(Exception e)
         {
@@ -65,10 +128,7 @@ public class SeekAndDestroy
 
     private String generateCommand(String name, String arg)
     {
-        if (arg.equals(""))
-            return name + "\r\n";
-        else
-            return name + " " + arg + "\r\n";
+        return name + " " + arg + "\r\n";
     }
 
     public static void main(String args[])
