@@ -37,7 +37,7 @@ public class SeekAndDestroy
         // establish a connection
         try
         {
-            socket = new Socket(address, port);
+            socket = new Socket(address, Integer.parseInt(controlPort));
             System.out.println("Connected");
 
             // sends output to the socket
@@ -64,22 +64,16 @@ public class SeekAndDestroy
             ServerSocket serverSocket = new ServerSocket(Integer.parseInt(dataPort),0, InetAddress.getByName(address));
             Socket clientSocket = serverSocket.accept();
             BufferedReader data = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-            boolean flag = true;
-            String line;
-            while (true)
+
+            String line = data.readLine();
+            System.out.println(line.length());
+            while (line != null)
             {
-                if ((line = data.readLine()) != null)
-                {
-                    flag = false;
-                    sharedStrings.add(line);
-                }
-                else if (!flag)
-                {
-                    break;
-                }
+                sharedStrings.add(line);
+                line = data.readLine();
             }
 
-            System.out.println("List: " + sharedStrings.toString());
+            System.out.println("List: " + sharedStrings.toString() + " " + sharedStrings.size());
         }
         catch(Exception e)
         {
@@ -96,6 +90,6 @@ public class SeekAndDestroy
 
     public static void main(String args[])
     {
-        SeekAndDestroy client = new SeekAndDestroy("127.0.0.1", 50000);
+        SeekAndDestroy client = new SeekAndDestroy("127.0.0.1", 60000);
     }
 }
