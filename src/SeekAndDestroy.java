@@ -1,4 +1,6 @@
 // A Java program for a Client
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
 import java.net.*;
 import java.util.*;
 import java.io.*;
@@ -25,6 +27,11 @@ public class SeekAndDestroy
     private Socket socket = null;
     private BufferedReader in = null;
     private DataOutputStream out = null;
+    private BufferedReader data = null;
+    private Socket clientSocket = null;
+    private ServerSocket serverSocket = null;
+    private boolean imageFound;
+
 
     // constructor to put ip address and port
     public SeekAndDestroy(String address, int port)
@@ -33,6 +40,7 @@ public class SeekAndDestroy
         this.dataPort = "12345";
         this.username = "bilkent";
         this.password = "cs421";
+        this.imageFound = false;
 
         // establish a connection
         try
@@ -53,6 +61,7 @@ public class SeekAndDestroy
             System.out.println(PASS + ": " + in.readLine());
 
             List<String> sharedStrings = new ArrayList<String>();
+            serverSocket = new ServerSocket(Integer.parseInt(dataPort),0, InetAddress.getByName(address));
 
             out.writeBytes(generateCommand(PORT, dataPort));
             out.flush();
@@ -60,24 +69,86 @@ public class SeekAndDestroy
 
             out.writeBytes(generateCommand(NLST, ""));
             out.flush();
+            System.out.println(NLST + "1 : " + in.readLine());
 
-            ServerSocket serverSocket = new ServerSocket(Integer.parseInt(dataPort),0, InetAddress.getByName(address));
-            Socket clientSocket = serverSocket.accept();
-            BufferedReader data = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+            clientSocket = serverSocket.accept();
+            data = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
 
-            String line = data.readLine();
-            System.out.println(line.length());
-            while (line != null)
-            {
-                sharedStrings.add(line);
-                line = data.readLine();
-            }
+            search();
 
-            System.out.println("List: " + sharedStrings.toString() + " " + sharedStrings.size());
         }
         catch(Exception e)
         {
             System.err.println(e);
+        }
+    }
+
+    private void search()
+    {
+        try
+        {
+            ArrayList<String> sharedStrings = new ArrayList<>();
+            out.writeBytes(generateCommand(NLST, ""));
+            out.flush();
+            System.out.println(NLST + ": " + in.readLine());
+
+            clientSocket = serverSocket.accept();
+            data = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+
+            String line = data.readLine();
+            byte[] size = line.getBytes();
+            if (size[1] == 0) {
+                out.writeBytes(generateCommand(CDUP, ""));
+                out.flush();
+                System.out.println(CDUP + ": " + in.readLine());
+                return;
+            }
+            byte[] size2 = new byte[size.length - 2];
+            for (int i = 2; i < size.length; i++)
+                size2[i - 2] = size[i];
+
+            line = new String(size2);
+            while (line != null) {
+                sharedStrings.add(line);
+                line = data.readLine();
+            }
+            System.out.println(sharedStrings.toString());
+
+            for (int i = 0; i < sharedStrings.size(); i++)
+            {
+                String[] item = sharedStrings.get(i).split(":");
+                if (item[1].equals("d"))
+                {
+                    out.writeBytes(generateCommand(CWD, item[0]));
+                    out.flush();
+                    System.out.println(CWD + " " + item[0] + " " + in.readLine());
+                    search();
+                }
+                else if (item[0].equals("target.jpg"))
+                {
+                    out.writeBytes(generateCommand(RETR, item[0]));
+                    out.flush();
+                    System.out.println(RETR + " " + item[0] + " " + in.readLine());
+                    out.writeBytes(generateCommand(DELE, item[0]));
+                    out.flush();
+                    System.out.println(DELE + " " + item[0] + " " + in.readLine());
+                    System.err.println("Found!");
+
+                    clientSocket = serverSocket.accept();
+                    data = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+
+                    String img = data.readLine();
+                    System.out.println(img);
+                }
+            }
+            System.err.println("For biter");
+            out.writeBytes(generateCommand(CDUP, ""));
+            out.flush();
+            System.out.println(CDUP + ": " + in.readLine());
+        }
+        catch(Exception e)
+        {
+
         }
     }
 
