@@ -90,15 +90,28 @@ public class SeekAndDestroy
             ArrayList<String> sharedStrings = new ArrayList<>();
             out.writeBytes(generateCommand(NLST, ""));
             out.flush();
-            System.out.println(NLST + ": " + in.readLine());
+            //System.out.println(NLST + ": " + in.readLine());
 
             clientSocket = serverSocket.accept();
             data = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
 
             String line = data.readLine();
-            byte[] size = line.getBytes();
 
-            if (!(size[0] == 0 && size[1] == 0)) {
+            if (line == null)
+            {
+                System.err.println("Orul orul oldu!!!!!!!111111");
+            }
+            byte[] size = line.getBytes();
+            if (size.length == 0)
+            {
+                System.err.println("Size 0 baboli!");
+            }
+            else if (size.length == 1)
+            {
+                System.err.println("Size 1 baboli!");
+            }
+
+            if (size.length != 1 && size[1] != 0) {
                 byte[] size2 = new byte[size.length - 2];
                 for (int i = 2; i < size.length; i++)
                     size2[i - 2] = size[i];
@@ -108,44 +121,40 @@ public class SeekAndDestroy
                     sharedStrings.add(line);
                     line = data.readLine();
                 }
-                System.out.println(sharedStrings.toString());
+                //System.out.println(sharedStrings.toString());
 
                 for (int i = 0; i < sharedStrings.size(); i++) {
                     String[] item = sharedStrings.get(i).split(":");
                     if (item[1].equals("d")) {
                         out.writeBytes(generateCommand(CWD, item[0]));
                         out.flush();
-                        System.out.println(CWD + " " + item[0] + " " + in.readLine());
+                        //System.out.println(CWD + " " + item[0] + " " + in.readLine());
                         search();
                     } else if (item[0].equals("target.jpg")) {
                         out.writeBytes(generateCommand(RETR, item[0]));
                         out.flush();
-                        System.out.println(RETR + " " + item[0] + " " + in.readLine());
+                        //System.out.println(RETR + " " + item[0] + " " + in.readLine());
                         out.writeBytes(generateCommand(DELE, item[0]));
                         out.flush();
-                        System.out.println(DELE + " " + item[0] + " " + in.readLine());
+                        //System.out.println(DELE + " " + item[0] + " " + in.readLine());
                         System.err.println("Found!");
 
                         clientSocket = serverSocket.accept();
                         data = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
 
                         String img = data.readLine();
-                        System.out.println(img);
+                        //System.out.println(img);
                     }
                 }
-                System.err.println("For biter");
-            }
-            else
-            {
-                System.err.println("İçim boş");
+                //System.err.println("For biter");
             }
             out.writeBytes(generateCommand(CDUP, ""));
             out.flush();
-            System.out.println(CDUP + ": " + in.readLine());
+            //System.out.println(CDUP + ": " + in.readLine());
         }
         catch(Exception e)
         {
-            System.out.println(e);
+            System.err.println(e);
         }
     }
 
@@ -158,6 +167,6 @@ public class SeekAndDestroy
 
     public static void main(String args[])
     {
-        SeekAndDestroy client = new SeekAndDestroy("127.0.0.1", 11111);
+        SeekAndDestroy client = new SeekAndDestroy("127.0.0.1", 65001);
     }
 }
