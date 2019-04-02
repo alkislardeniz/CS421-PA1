@@ -1,4 +1,3 @@
-// A Java program for a Client
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.net.*;
@@ -18,64 +17,52 @@ public class SeekAndDestroy
     private final String DELE = "DELE";
     private final String QUIT = "QUIT";
 
+    // create socket, input and output stream
+    private Socket socket;
+    private BufferedReader in;
+    private DataOutputStream out;
+    private BufferedReader data;
+    private Socket clientSocket;
+    private ServerSocket serverSocket;
+
     private String username;
     private String password;
-    private String controlPort;
-    private String dataPort;
+    private boolean keepSearch;
 
-    // create socket, input and output stream
-    private Socket socket = null;
-    private BufferedReader in = null;
-    private DataOutputStream out = null;
-    private BufferedReader data = null;
-    private Socket clientSocket = null;
-    private ServerSocket serverSocket = null;
-    private boolean imageFound;
-
-
-    // constructor to put ip address and port
-    public SeekAndDestroy(String address, int port)
+    // constructor
+    public SeekAndDestroy(String address, int controlPort, int dataPort)
     {
-        this.controlPort = port + "";
-        this.dataPort = "12345";
         this.username = "bilkent";
         this.password = "cs421";
-        this.imageFound = false;
+        this.keepSearch = true;
 
         // establish a connection
         try
         {
-            socket = new Socket(address, Integer.parseInt(controlPort));
-            System.out.println("Connected");
+            socket = new Socket(address, controlPort);
+            System.out.println("Connected!");
 
-            // sends output to the socket
+            // input and output init
             in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             out = new DataOutputStream(socket.getOutputStream());
 
+            // send the username
             out.writeBytes(generateCommand(USER, username));
             out.flush();
             System.out.println(USER + ": " + in.readLine());
 
+            // send the password
             out.writeBytes(generateCommand(PASS, password));
             out.flush();
             System.out.println(PASS + ": " + in.readLine());
 
-            List<String> sharedStrings = new ArrayList<String>();
-            serverSocket = new ServerSocket(Integer.parseInt(dataPort),0, InetAddress.getByName(address));
+            // create data socket
+            serverSocket = new ServerSocket(dataPort,0, InetAddress.getByName(address));
 
-            out.writeBytes(generateCommand(PORT, dataPort));
+            // send port info
+            out.writeBytes(generateCommand(PORT, dataPort + ""));
             out.flush();
             System.out.println(PORT + ": " + in.readLine());
-
-            out.writeBytes(generateCommand(NLST, ""));
-            out.flush();
-            System.out.println(NLST + "1 : " + in.readLine());
-
-            clientSocket = serverSocket.accept();
-            data = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-
-            search();
-
         }
         catch(Exception e)
         {
@@ -83,75 +70,92 @@ public class SeekAndDestroy
         }
     }
 
-    private void search()
+    public void imageSearch()
     {
-        try
+        if (keepSearch)
         {
-            ArrayList<String> sharedStrings = new ArrayList<>();
-            out.writeBytes(generateCommand(NLST, ""));
-            out.flush();
-            System.out.println(NLST + ": " + in.readLine());
-            
-            clientSocket = serverSocket.accept();
-   
-            InputStream stream = clientSocket.getInputStream();
-          
-            byte[] dat = new byte[2];
-            int count = stream.read(dat);
-        
-            data = new BufferedReader(new InputStreamReader(stream));
- 
+            try
+            {
+                // show the current directory
+                ArrayList<String> sharedStrings = new ArrayList<>();
+                out.writeBytes(generateCommand(NLST, ""));
+                out.flush();
+                //System.out.println(NLST + ": " + in.readLine());
 
-            String line = data.readLine();
+                clientSocket = serverSocket.accept();
+                InputStream stream = clientSocket.getInputStream();
+                byte[] dat = new byte[2];
+                stream.read(dat);
 
-            
+                data = new BufferedReader(new InputStreamReader(stream));
+                String line = data.readLine();
+                if (!(dat[1] == 0 && dat[0] == 0) )
+                {
+                    while (line != null) {
+                        sharedStrings.add(line);
+                        line = data.readLine();
+                    }
+                    //System.out.println(sharedStrings.toString());
 
-            
+                    // for each item in the directory
+                    for (int i = 0; i < sharedStrings.size(); i++)
+                    {
+                        String[] item = sharedStrings.get(i).split(":");
+                        if (item[1].equals("d"))
+                        {
+                            out.writeBytes(generateCommand(CWD, item[0]));
+                            out.flush();
+                            //System.out.println(CWD + " " + item[0] + " " + in.readLine());
+                            imageSearch();
+                        } else if (item[0].equals("target.jpg"))
+                        {
+                            System.err.println("Image found!");
+                            out.writeBytes(generateCommand(RETR, item[0]));
+                            out.flush();
+                            System.out.println(RETR + " " + item[0] + " " + in.readLine());
 
+                            clientSocket = serverSocket.accept();
+                            InputStream imageStream = clientSocket.getInputStream();
 
-            if (!(dat[1] == 0 && dat[0] == 0) ){
-              
-                while (line != null) {
-                    sharedStrings.add(line);
-                    line = data.readLine();
-                }
-                System.out.println(sharedStrings.toString());
+                            // get image size
+                            byte[] imgSizeBytes = new byte[2];
+                            imageStream.read(imgSizeBytes);
+                            int imgSize = 0;
+                            imgSize = (imgSize << 8) + (imgSizeBytes[0] & 0xff);
+                            imgSize = (imgSize << 8) + (imgSizeBytes[1] & 0xff);
 
-                for (int i = 0; i < sharedStrings.size(); i++) {
-                    String[] item = sharedStrings.get(i).split(":");
-                    if (item[1].equals("d")) {
-                        out.writeBytes(generateCommand(CWD, item[0]));
-                        out.flush();
-                        System.out.println(CWD + " " + item[0] + " " + in.readLine());
-                        search();
-                    } else if (item[0].equals("target.jpg")) {
-                        out.writeBytes(generateCommand(RETR, item[0]));
-                        out.flush();
-                        System.out.println(RETR + " " + item[0] + " " + in.readLine());
-                        out.writeBytes(generateCommand(DELE, item[0]));
-                        out.flush();
-                        System.out.println(DELE + " " + item[0] + " " + in.readLine());
-                        System.err.println("Found!");
+                            // read the image
+                            byte[] img = new byte[imgSize];
+                            imageStream.read(img);
 
-                        clientSocket = serverSocket.accept();
-                        data = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+                            // save the image
+                            BufferedImage bImage2 = ImageIO.read(new ByteArrayInputStream(img));
+                            ImageIO.write(bImage2, "jpg", new File("received.jpg") );
+                            System.err.println("Image saved.");
 
-                        String img = data.readLine();
-                        System.out.println(img);
+                            // delete the image
+                            out.writeBytes(generateCommand(DELE, item[0]));
+                            out.flush();
+                            System.out.println(DELE + " " + item[0] + " " + in.readLine());
+
+                            // quit from the server and break the recursion
+                            out.writeBytes(generateCommand(QUIT, ""));
+                            out.flush();
+                            System.out.println(QUIT + " " + in.readLine());
+                            keepSearch = false;
+                            return;
+                        }
                     }
                 }
-                System.err.println("For biter");
+                // change to parent's directory
+                out.writeBytes(generateCommand(CDUP, ""));
+                out.flush();
+                //System.out.println(CDUP + ": " + in.readLine());
             }
-            else{
-                System.err.println("İçim boş");
+            catch(Exception e)
+            {
+                e.printStackTrace();
             }
-            out.writeBytes(generateCommand(CDUP, ""));
-            out.flush();
-            System.out.println(CDUP + ": " + in.readLine());
-        }
-        catch(Exception e)
-        {
-            System.err.println(e);
         }
     }
 
@@ -164,6 +168,7 @@ public class SeekAndDestroy
 
     public static void main(String args[])
     {
-        SeekAndDestroy client = new SeekAndDestroy("127.0.0.1", 60000);
+        SeekAndDestroy client = new SeekAndDestroy("127.0.0.1", 60001, 12345);
+        client.imageSearch();
     }
 }
