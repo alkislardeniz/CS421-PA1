@@ -17,52 +17,50 @@ public class SeekAndDestroy
     private final String DELE = "DELE";
     private final String QUIT = "QUIT";
 
-    // create socket, input and output stream
-    private Socket socket;
-    private BufferedReader in;
+    // create controlSocket, input and output stream
+    private Socket controlSocket;
+    private BufferedReader controlReader;
     private DataOutputStream out;
-    private BufferedReader data;
-    private Socket clientSocket;
+    private BufferedReader dataReader;
+    private Socket dataSocket;
     private ServerSocket serverSocket;
 
-    private String username;
-    private String password;
+    private final String username = "bilkent";
+    private final String password = "cs421";
     private boolean keepSearch;
 
     // constructor
     public SeekAndDestroy(String address, int controlPort, int dataPort)
     {
-        this.username = "bilkent";
-        this.password = "cs421";
         this.keepSearch = true;
 
         // establish a connection
         try
         {
-            socket = new Socket(address, controlPort);
+            controlSocket = new Socket(address, controlPort);
             System.out.println("Connected!");
 
             // input and output init
-            in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-            out = new DataOutputStream(socket.getOutputStream());
+            controlReader = new BufferedReader(new InputStreamReader(controlSocket.getInputStream()));
+            out = new DataOutputStream(controlSocket.getOutputStream());
 
             // send the username
             out.writeBytes(generateCommand(USER, username));
             out.flush();
-            System.out.println(USER + ": " + in.readLine());
+            System.out.println(USER + ": " + controlReader.readLine());
 
             // send the password
             out.writeBytes(generateCommand(PASS, password));
             out.flush();
-            System.out.println(PASS + ": " + in.readLine());
+            System.out.println(PASS + ": " + controlReader.readLine());
 
-            // create data socket
+            // create dataReader controlSocket
             serverSocket = new ServerSocket(dataPort,0, InetAddress.getByName(address));
 
             // send port info
             out.writeBytes(generateCommand(PORT, dataPort + ""));
             out.flush();
-            System.out.println(PORT + ": " + in.readLine());
+            System.out.println(PORT + ": " + controlReader.readLine());
         }
         catch(Exception e)
         {
@@ -80,24 +78,24 @@ public class SeekAndDestroy
                 ArrayList<String> sharedStrings = new ArrayList<>();
                 out.writeBytes(generateCommand(NLST, ""));
                 out.flush();
-                //System.out.println(NLST + ": " + in.readLine());
+                //System.out.println(NLST + ": " + controlReader.readLine());
 
-                clientSocket = serverSocket.accept();
-                InputStream stream = clientSocket.getInputStream();
+                dataSocket = serverSocket.accept();
+                InputStream stream = dataSocket.getInputStream();
                 byte[] dat = new byte[2];
                 stream.read(dat);
 
-                data = new BufferedReader(new InputStreamReader(stream));
-                String line = data.readLine();
+                dataReader = new BufferedReader(new InputStreamReader(stream));
+                String line = dataReader.readLine();
                 if (!(dat[1] == 0 && dat[0] == 0) )
                 {
                     while (line != null) {
                         sharedStrings.add(line);
-                        line = data.readLine();
+                        line = dataReader.readLine();
                     }
                     //System.out.println(sharedStrings.toString());
 
-                    // for each item in the directory
+                    // for each item controlReader the directory
                     for (int i = 0; i < sharedStrings.size(); i++)
                     {
                         String[] item = sharedStrings.get(i).split(":");
@@ -105,17 +103,17 @@ public class SeekAndDestroy
                         {
                             out.writeBytes(generateCommand(CWD, item[0]));
                             out.flush();
-                            //System.out.println(CWD + " " + item[0] + " " + in.readLine());
+                            //System.out.println(CWD + " " + item[0] + " " + controlReader.readLine());
                             imageSearch();
                         } else if (item[0].equals("target.jpg"))
                         {
                             System.err.println("Image found!");
                             out.writeBytes(generateCommand(RETR, item[0]));
                             out.flush();
-                            System.out.println(RETR + " " + item[0] + " " + in.readLine());
+                            System.out.println(RETR + " " + item[0] + " " + controlReader.readLine());
 
-                            clientSocket = serverSocket.accept();
-                            InputStream imageStream = clientSocket.getInputStream();
+                            dataSocket = serverSocket.accept();
+                            InputStream imageStream = dataSocket.getInputStream();
 
                             // get image size
                             byte[] imgSizeBytes = new byte[2];
@@ -136,12 +134,12 @@ public class SeekAndDestroy
                             // delete the image
                             out.writeBytes(generateCommand(DELE, item[0]));
                             out.flush();
-                            System.out.println(DELE + " " + item[0] + " " + in.readLine());
+                            System.out.println(DELE + " " + item[0] + " " + controlReader.readLine());
 
                             // quit from the server and break the recursion
                             out.writeBytes(generateCommand(QUIT, ""));
                             out.flush();
-                            System.out.println(QUIT + " " + in.readLine());
+                            System.out.println(QUIT + " " + controlReader.readLine());
                             keepSearch = false;
                             return;
                         }
@@ -150,7 +148,7 @@ public class SeekAndDestroy
                 // change to parent's directory
                 out.writeBytes(generateCommand(CDUP, ""));
                 out.flush();
-                //System.out.println(CDUP + ": " + in.readLine());
+                //System.out.println(CDUP + ": " + controlReader.readLine());
             }
             catch(Exception e)
             {
@@ -168,7 +166,14 @@ public class SeekAndDestroy
 
     public static void main(String args[])
     {
-        SeekAndDestroy client = new SeekAndDestroy("127.0.0.1", 60001, 12345);
+        if (args.length != 2)
+        {
+            System.out.println("Invalid format: SeekAndDestroy <Host> <Port>");
+            return;
+        }
+        String host = args[0];
+        int controlPort = Integer.parseInt(args[1]);
+        SeekAndDestroy client = new SeekAndDestroy(host, controlPort, 12345);
         client.imageSearch();
     }
 }
