@@ -55,7 +55,7 @@ public class SeekAndDestroy
             System.out.println(PASS + ": " + controlReader.readLine());
 
             // create dataReader controlSocket
-            serverSocket = new ServerSocket(dataPort,0, InetAddress.getByName(address));
+            serverSocket = new ServerSocket(dataPort, 0, InetAddress.getByName(address));
 
             // send port info
             out.writeBytes(generateCommand(PORT, dataPort + ""));
@@ -64,7 +64,7 @@ public class SeekAndDestroy
         }
         catch(Exception e)
         {
-            System.err.println(e);
+            e.printStackTrace();
         }
     }
 
@@ -102,7 +102,7 @@ public class SeekAndDestroy
 
                 dataReader = new BufferedReader(new InputStreamReader(stream));
                 String line = dataReader.readLine();
-                if (!(dat[1] == 0 && dat[0] == 0) )
+                if (!(dat[1] == 0 && dat[0] == 0))
                 {
                     while (line != null) {
                         sharedStrings.add(line);
@@ -134,8 +134,8 @@ public class SeekAndDestroy
                             byte[] imgSizeBytes = new byte[2];
                             imageStream.read(imgSizeBytes);
                             int imgSize = 0;
-                            imgSize = (imgSize << 8) + (imgSizeBytes[0] & 0xff);
-                            imgSize = (imgSize << 8) + (imgSizeBytes[1] & 0xff);
+                            imgSize = (imgSize << 8) + (imgSizeBytes[0] & 0xFF);
+                            imgSize = (imgSize << 8) + (imgSizeBytes[1] & 0xFF);
 
                             // read the image
                             byte[] imgBytes = new byte[imgSize];
