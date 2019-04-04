@@ -61,14 +61,25 @@ public class SeekAndDestroy
             out.writeBytes(generateCommand(PORT, dataPort + ""));
             out.flush();
             System.out.println(PORT + ": " + controlReader.readLine());
-            imageSearch();
-            dataSocket.close();
-            serverSocket.close();
-            controlSocket.close();
         }
         catch(Exception e)
         {
             System.err.println(e);
+        }
+    }
+
+    public void closeSockets()
+    {
+        try
+        {
+            dataSocket.close();
+            serverSocket.close();
+            Thread.sleep(250);
+            controlSocket.close();
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
         }
     }
 
@@ -99,8 +110,7 @@ public class SeekAndDestroy
                     }
                     //System.out.println(sharedStrings.toString());
 
-                    // for each item controlReader the directory
-                   
+                    // for each item check for a directory
                     for (int i = 0; i < sharedStrings.size() && keepSearch; i++)
                     {
                         String[] item = sharedStrings.get(i).split(":");
@@ -128,12 +138,12 @@ public class SeekAndDestroy
                             imgSize = (imgSize << 8) + (imgSizeBytes[1] & 0xff);
 
                             // read the image
-                            byte[] img = new byte[imgSize];
-                            imageStream.read(img);
+                            byte[] imgBytes = new byte[imgSize];
+                            imageStream.read(imgBytes);
 
                             // save the image
-                            BufferedImage bImage2 = ImageIO.read(new ByteArrayInputStream(img));
-                            ImageIO.write(bImage2, "jpg", new File("received.jpg") );
+                            BufferedImage img = ImageIO.read(new ByteArrayInputStream(imgBytes));
+                            ImageIO.write(img, "jpg", new File("received.jpg") );
                             System.err.println("Image saved.");
 
                             // delete the image
@@ -148,7 +158,6 @@ public class SeekAndDestroy
                             keepSearch = false;
                             return;
                         }
-                    
                     }
                 }
                 // change to parent's directory
@@ -174,11 +183,13 @@ public class SeekAndDestroy
     {
         if (args.length != 2)
         {
-            System.out.println("Invalid format: SeekAndDestroy <Host> <Port>");
+            System.out.println("Invalid format: SeekAndDestroy <Addr> <Port>");
             return;
         }
         String host = args[0];
         int controlPort = Integer.parseInt(args[1]);
         SeekAndDestroy client = new SeekAndDestroy(host, controlPort, 12345);
+        client.imageSearch();
+        client.closeSockets();
     }
 }
