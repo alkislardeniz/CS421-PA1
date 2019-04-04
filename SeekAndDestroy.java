@@ -61,6 +61,10 @@ public class SeekAndDestroy
             out.writeBytes(generateCommand(PORT, dataPort + ""));
             out.flush();
             System.out.println(PORT + ": " + controlReader.readLine());
+            imageSearch();
+            dataSocket.close();
+            serverSocket.close();
+            controlSocket.close();
         }
         catch(Exception e)
         {
@@ -96,7 +100,8 @@ public class SeekAndDestroy
                     //System.out.println(sharedStrings.toString());
 
                     // for each item controlReader the directory
-                    for (int i = 0; i < sharedStrings.size(); i++)
+                   
+                    for (int i = 0; i < sharedStrings.size() && keepSearch; i++)
                     {
                         String[] item = sharedStrings.get(i).split(":");
                         if (item[1].equals("d"))
@@ -143,6 +148,7 @@ public class SeekAndDestroy
                             keepSearch = false;
                             return;
                         }
+                    
                     }
                 }
                 // change to parent's directory
@@ -174,6 +180,5 @@ public class SeekAndDestroy
         String host = args[0];
         int controlPort = Integer.parseInt(args[1]);
         SeekAndDestroy client = new SeekAndDestroy(host, controlPort, 12345);
-        client.imageSearch();
     }
 }
